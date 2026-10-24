@@ -27,13 +27,31 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK (.apk)
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee build_log.txt
 
       - name: Build Release APK (.apk)
-        run: ./gradlew assembleRelease --stacktrace
+        run: |
+          ./gradlew assembleRelease --stacktrace --no-daemon 2>&1 | tee -a build_log.txt
 
       - name: Build Release Bundle (.aab)
-        run: ./gradlew bundleRelease --stacktrace
+        run: |
+          ./gradlew bundleRelease --stacktrace --no-daemon 2>&1 | tee -a build_log.txt
+
+      - name: Print Failure Summary to GitHub
+        if: failure()
+        run: |
+          echo "### ❌ Build Failure Details" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          tail -n 80 build_log.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Build Log Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: build_log.txt
 
       - name: Upload APKs (BlueStacks / Sideloading)
         uses: actions/upload-artifact@v4

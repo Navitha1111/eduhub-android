@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Release APK and AAB
@@ -29,29 +32,27 @@ jobs:
       - name: Build Debug APK (.apk)
         run: |
           ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee build_log.txt
+          test ${PIPESTATUS[0]} -eq 0
 
       - name: Build Release APK (.apk)
         run: |
           ./gradlew assembleRelease --stacktrace --no-daemon 2>&1 | tee -a build_log.txt
+          test ${PIPESTATUS[0]} -eq 0
 
       - name: Build Release Bundle (.aab)
         run: |
           ./gradlew bundleRelease --stacktrace --no-daemon 2>&1 | tee -a build_log.txt
+          test ${PIPESTATUS[0]} -eq 0
 
-      - name: Print Failure Summary to GitHub
-        if: failure()
-        run: |
-          echo "### ❌ Build Failure Details" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          tail -n 80 build_log.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Build Log Artifact
+      - name: Save Log to Branch
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-build-log
-          path: build_log.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B build-logs
+          git add build_log.txt
+          git commit -m "build log output [skip ci]" || echo "No changes"
+          git push origin build-logs --force || echo "Could not push to branch"
 
       - name: Upload APKs (BlueStacks / Sideloading)
         uses: actions/upload-artifact@v4

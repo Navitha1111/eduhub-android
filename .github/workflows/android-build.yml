@@ -44,16 +44,6 @@ jobs:
           ./gradlew bundleRelease --stacktrace --no-daemon 2>&1 | tee -a build_log.txt
           test ${PIPESTATUS[0]} -eq 0
 
-      - name: Save Log to Branch
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B build-logs
-          git add build_log.txt
-          git commit -m "build log output [skip ci]" || echo "No changes"
-          git push origin build-logs --force || echo "Could not push to branch"
-
       - name: Upload APKs (BlueStacks / Sideloading)
         uses: actions/upload-artifact@v4
         if: always()
@@ -67,3 +57,13 @@ jobs:
         with:
           name: eduhub-release-aab
           path: app/build/outputs/bundle/release/*.aab
+
+      - name: Save Log to Branch
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B build-logs
+          git add build_log.txt
+          git commit -m "build log output [skip ci]" || echo "No changes"
+          git push origin build-logs --force || echo "Could not push to branch"

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -189,7 +190,7 @@ fun QuizScreen(
                 }
 
                 // Options List
-                items(options.indices.toList()) { index ->
+                items(options.size) { index ->
                     val optText = options[index]
                     val isChosen = selectedOption == index
                     val isCorrect = index == q.correctOptionIndex

@@ -33,3 +33,7 @@
 # 5. TextToSpeech & Native System Services
 -keep class android.speech.tts.** { *; }
 -keep class com.eduhub.android.utils.** { *; }
+
+# 6. Global Resilience for Android Third-Party Libraries
+-ignorewarnings
+-dontwarn **

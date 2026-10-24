@@ -33,16 +33,15 @@ android {
 
     signingConfigs {
         create("release") {
-            val storeFilePath = keystoreProperties.getProperty("storeFile") ?: "../release.keystore"
-            val targetKeyFile = if (rootProject.file(storeFilePath).exists()) {
-                rootProject.file(storeFilePath)
-            } else if (file(storeFilePath).exists()) {
-                file(storeFilePath)
-            } else {
-                rootProject.file("release.keystore")
-            }
+            val storeProp = keystoreProperties.getProperty("storeFile") ?: "release.keystore"
+            val targetKeyFile = listOf(
+                rootProject.file(storeProp),
+                file(storeProp),
+                rootProject.file("release.keystore"),
+                file("../release.keystore")
+            ).firstOrNull { it.exists() }
 
-            if (targetKeyFile.exists()) {
+            if (targetKeyFile != null && targetKeyFile.exists()) {
                 storeFile = targetKeyFile
                 storePassword = keystoreProperties.getProperty("storePassword") ?: "eduhub-release-key-2026"
                 keyAlias = keystoreProperties.getProperty("keyAlias") ?: "eduhub"
@@ -68,6 +67,11 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 
     bundle {

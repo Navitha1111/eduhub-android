@@ -26,20 +26,25 @@ jobs:
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
 
-      - name: Build Release Bundle (.aab)
-        run: ./gradlew bundleRelease --stacktrace
+      - name: Build Debug APK (.apk)
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Build Release APK (.apk)
         run: ./gradlew assembleRelease --stacktrace
 
+      - name: Build Release Bundle (.aab)
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Upload APKs (BlueStacks / Sideloading)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eduhub-apks
+          path: app/build/outputs/apk/**/*.apk
+
       - name: Upload Release AAB (Play Store)
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: eduhub-release-aab
           path: app/build/outputs/bundle/release/*.aab
-
-      - name: Upload Release APK (BlueStacks / Phone Sideloading)
-        uses: actions/upload-artifact@v4
-        with:
-          name: eduhub-release-apk
-          path: app/build/outputs/apk/release/*.apk

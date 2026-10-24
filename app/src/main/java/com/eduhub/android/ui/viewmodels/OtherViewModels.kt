@@ -1,0 +1,151 @@
+package com.eduhub.android.ui.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.eduhub.android.data.local.entities.BookmarkEntity
+import com.eduhub.android.data.local.entities.CertificateEntity
+import com.eduhub.android.data.local.entities.NoteEntity
+import com.eduhub.android.data.local.entities.UserProgressEntity
+import com.eduhub.android.data.repository.EduHubRepository
+import com.eduhub.android.data.seed.LanguageCatalogData
+import com.eduhub.android.data.seed.LanguageSpec
+import com.eduhub.android.domain.models.Flashcard
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+
+// 1. CheatSheetViewModel
+class CheatSheetViewModel : ViewModel() {
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _allSpecs = MutableStateFlow(LanguageCatalogData.languages)
+
+    val filteredSpecs: StateFlow<List<LanguageSpec>> = combine(_allSpecs, _searchQuery) { list, q ->
+        if (q.isEmpty()) list
+        else list.filter {
+            it.langName.contains(q, ignoreCase = true) ||
+            it.cheatSheetSummary.contains(q, ignoreCase = true) ||
+            it.category.contains(q, ignoreCase = true)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LanguageCatalogData.languages)
+
+    fun updateSearch(q: String) { _searchQuery.value = q }
+}
+
+// 2. FlashcardViewModel
+class FlashcardViewModel : ViewModel() {
+    private val _cards = MutableStateFlow<List<Flashcard>>(
+        LanguageCatalogData.languages.flatMapIndexed { index, spec ->
+            listOf(
+                Flashcard(
+                    id = (index * 2 + 1).toLong(),
+                    languageSlug = spec.slug,
+                    languageName = spec.langName,
+                    question = "What is the core paradigm of ${spec.langName}?",
+                    answer = spec.paradigm,
+                    category = spec.category
+                ),
+                Flashcard(
+                    id = (index * 2 + 2).toLong(),
+                    languageSlug = spec.slug,
+                    languageName = spec.langName,
+                    question = "How is basic syntax and output structured in ${spec.langName}?",
+                    answer = spec.helloCode,
+                    category = spec.category
+                )
+            )
+        }
+    )
+
+    private val _currentIndex = MutableStateFlow(0)
+    val currentIndex: StateFlow<Int> = _currentIndex.asStateFlow()
+
+    private val _isFlipped = MutableStateFlow(false)
+    val isFlipped: StateFlow<Boolean> = _isFlipped.asStateFlow()
+
+    val currentCard: StateFlow<Flashcard?> = combine(_cards, _currentIndex) { list, idx ->
+        if (list.isNotEmpty() && idx < list.size) list[idx] else null
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun flipCard() { _isFlipped.value = !_isFlipped.value }
+
+    fun nextCard() {
+        if (_currentIndex.value + 1 < _cards.value.size) {
+            _currentIndex.value += 1
+            _isFlipped.value = false
+        } else {
+            _currentIndex.value = 0
+            _isFlipped.value = false
+        }
+    }
+
+    fun prevCard() {
+        if (_currentIndex.value > 0) {
+            _currentIndex.value -= 1
+            _isFlipped.value = false
+        }
+    }
+}
+
+// 3. CertificateViewModel
+class CertificateViewModel(private val repository: EduHubRepository) : ViewModel() {
+    val certificates: StateFlow<List<CertificateEntity>> = repository.allCertificates
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+}
+
+// 4. BookmarksNotesViewModel
+class BookmarksNotesViewModel(private val repository: EduHubRepository) : ViewModel() {
+    val bookmarks: StateFlow<List<BookmarkEntity>> = repository.allBookmarks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val notes: StateFlow<List<NoteEntity>> = repository.allNotes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun deleteNote(note: NoteEntity) {
+        viewModelScope.launch { repository.deleteNote(note) }
+    }
+}
+
+// 5. AdminCourseCreatorViewModel
+class AdminCourseCreatorViewModel(private val repository: EduHubRepository) : ViewModel() {
+    private val _statusMessage = MutableStateFlow<String?>(null)
+    val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
+
+    fun autoGenerateCourse(techName: String) {
+        if (techName.isBlank()) return
+        viewModelScope.launch {
+            val title = "$techName Complete Mastery (0 to Advanced)"
+            val desc = "Automated complete 4-tier 0-to-Advanced course covering fundamentals, syntax, control flow, modularity, and capstone architecture for $techName."
+            val starterCode = "// Auto-generated $techName curriculum starter\nprint('Hello from $techName!');"
+
+            repository.createCustomCourse(
+                title = title,
+                languageName = techName,
+                category = "Emerging & Specialized",
+                difficulty = "Beginner",
+                hours = 18,
+                description = desc,
+                starterCode = starterCode
+            )
+            _statusMessage.value = "⚡ Successfully created complete 4-tier curriculum for $techName!"
+        }
+    }
+
+    fun clearStatus() { _statusMessage.value = null }
+}
+
+// 6. ProfileViewModel
+class ProfileViewModel(private val repository: EduHubRepository) : ViewModel() {
+    val userProgress: StateFlow<UserProgressEntity?> = repository.userProgress
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun updateName(newName: String) {
+        if (newName.isNotBlank()) {
+            viewModelScope.launch { repository.updateStudentName(newName) }
+        }
+    }
+
+    fun toggleDarkMode(isDark: Boolean) {
+        viewModelScope.launch { repository.toggleTheme(isDark) }
+    }
+}

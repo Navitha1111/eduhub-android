@@ -58,6 +58,32 @@ jobs:
           name: eduhub-release-aab
           path: app/build/outputs/bundle/release/*.aab
 
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/master' && success()
+        with:
+          tag_name: v1.0.0-vps
+          name: "EDUHUB Android v1.0.0 (VPS Cloud Connected)"
+          body: |
+            ### 🎓 EDUHUB Android v1.0.0 — VPS Cloud Edition
+            Direct download binaries ready for BlueStacks, mobile devices, and Google Play Store:
+
+            - 📱 **`app-debug.apk`** — Ready to drag & drop straight into BlueStacks or install on any Android phone (pre-signed).
+            - 📦 **`app-release.aab`** — Android App Bundle ready to upload to Google Play Console.
+            
+            #### 🌟 Features:
+            - **Connected to VPS Backend** (`http://162.35.9.208:8080`)
+            - **Online Student Registration & Authentication**
+            - **Live XP & Progress Cloud Sync**
+            - **Tamper-Evident SHA-256 Certificate System** with AI Commendations & Public Verification
+            - **39 Programming Languages** from 0 to Advanced
+          draft: false
+          prerelease: false
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+
       - name: Save Log to Branch
         if: always()
         run: |

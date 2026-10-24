@@ -48,8 +48,8 @@ fun CertificateScreen(
         topBar = {
             CommonTopAppBar(
                 title = "Verifiable Certificates",
-                showBack = true,
-                onBack = onNavigateBack
+                canNavigateBack = true,
+                onNavigateBack = onNavigateBack
             )
         },
         containerColor = EduSlate950

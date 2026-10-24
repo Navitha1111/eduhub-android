@@ -78,9 +78,8 @@ fun AuthScreen(
         topBar = {
             CommonTopAppBar(
                 title = if (selectedTab == 0) "Create Student Account" else "Sign In to EDUHUB",
-                subtitle = "Central VPS Cloud Integration",
-                showBack = true,
-                onBack = onNavigateBack,
+                canNavigateBack = true,
+                onNavigateBack = onNavigateBack,
                 actions = {
                     IconButton(onClick = { showServerSettings = !showServerSettings }) {
                         Icon(

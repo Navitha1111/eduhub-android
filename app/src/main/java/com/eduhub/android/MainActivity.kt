@@ -242,7 +242,17 @@ fun MainAppScaffold(
                 ProfileScreen(
                     viewModel = profileVm,
                     onNavigateToCertificates = { navController.navigate(Screen.Certificates.route) },
-                    onNavigateToBookmarks = { navController.navigate(Screen.BookmarksNotes.route) }
+                    onNavigateToBookmarks = { navController.navigate(Screen.BookmarksNotes.route) },
+                    onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
+                )
+            }
+
+            // 14. VPS Cloud Authentication & Student Registration
+            composable(Screen.Auth.route) {
+                AuthScreen(
+                    repository = repository,
+                    onNavigateBack = { navController.popBackStack() },
+                    onAuthSuccess = { navController.popBackStack() }
                 )
             }
         }

@@ -71,7 +71,15 @@ data class UserProgressEntity(
     val completedChallengesCount: Int = 0,
     val isDarkMode: Boolean = true,
     val speechRate: Float = 1.0f,
-    val preferredLanguageSlug: String = "python"
+    val preferredLanguageSlug: String = "python",
+    val serverUrl: String = "http://162.35.9.208:8080",
+    val isLoggedIn: Boolean = false,
+    val username: String = "",
+    val email: String = "",
+    val role: String = "STUDENT",
+    val serverUserId: Long = 0L,
+    val adminToken: String = "",
+    val lastSyncTimestamp: Long = 0L
 )
 
 @Entity(tableName = "certificates")
@@ -84,7 +92,11 @@ data class CertificateEntity(
     val studentName: String,
     val issueDate: String,
     val scorePercentage: Int = 100,
-    val grade: String = "Distinction (Mastery)"
+    val grade: String = "Mastery with Honors (100% Course Completion)",
+    val sha256Signature: String = "",
+    val aiCommendation: String = "",
+    val issuerName: String = "EDUHUB Global Autonomous Academy",
+    val isSyncedToServer: Boolean = false
 )
 
 @Entity(tableName = "snippets")

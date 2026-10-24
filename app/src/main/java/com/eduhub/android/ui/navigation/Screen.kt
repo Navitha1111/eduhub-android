@@ -24,4 +24,5 @@ sealed class Screen(val route: String) {
     object Certificates : Screen("certificates")
     object AdminCourseCreator : Screen("admin_creator")
     object Profile : Screen("profile")
+    object Auth : Screen("auth")
 }

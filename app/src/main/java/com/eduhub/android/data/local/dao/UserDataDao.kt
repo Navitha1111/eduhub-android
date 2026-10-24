@@ -71,6 +71,18 @@ interface UserProgressDao {
 
     @Query("UPDATE user_progress SET currentStreak = :streak, lastActiveDate = :dateStr WHERE id = 1")
     suspend fun updateStreak(streak: Int, dateStr: String)
+
+    @Query("UPDATE user_progress SET isLoggedIn = :isLoggedIn, username = :username, email = :email, studentName = :fullName, role = :role, serverUserId = :userId, adminToken = :adminToken, lastSyncTimestamp = :syncTime WHERE id = 1")
+    suspend fun updateAuthSession(isLoggedIn: Boolean, username: String, email: String, fullName: String, role: String, userId: Long, adminToken: String, syncTime: Long)
+
+    @Query("UPDATE user_progress SET serverUrl = :serverUrl WHERE id = 1")
+    suspend fun updateServerUrl(serverUrl: String)
+
+    @Query("UPDATE user_progress SET lastSyncTimestamp = :timestamp WHERE id = 1")
+    suspend fun updateLastSync(timestamp: Long)
+
+    @Query("UPDATE user_progress SET isLoggedIn = 0, username = '', email = '', role = 'STUDENT', serverUserId = 0, adminToken = '' WHERE id = 1")
+    suspend fun clearAuthSession()
 }
 
 @Dao
@@ -83,6 +95,9 @@ interface CertificateDao {
 
     @Query("SELECT * FROM certificates WHERE courseSlug = :slug LIMIT 1")
     fun getCertificateByCourseSlugFlow(slug: String): Flow<CertificateEntity?>
+
+    @Query("SELECT * FROM certificates WHERE verificationId = :id OR sha256Signature = :id LIMIT 1")
+    suspend fun getCertificateByVerificationId(id: String): CertificateEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCertificate(cert: CertificateEntity): Long

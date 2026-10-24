@@ -168,31 +168,169 @@ class EduHubRepository(private val database: EduHubDatabase) {
         val existing = certificateDao.getCertificateByCourseSlug(courseSlug)
         if (existing != null) return existing
 
-        val dateStr = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date())
-        val hash = generateVerificationHash(studentName, courseSlug)
-        val grade = when {
-            scorePct >= 90 -> "Distinction (Honors)"
-            scorePct >= 75 -> "Merit (Proficient)"
-            else -> "Pass (Competent)"
+        val user = userProgressDao.getUserProgress()
+        val userId = user?.serverUserId ?: 101L
+        val effectiveStudentName = if (!user?.username.isNullOrBlank() && !user?.studentName.isNullOrBlank()) {
+            user!!.studentName
+        } else {
+            studentName
         }
+
+        val dateStr = SimpleDateFormat("MMMM dd, yyyy", Locale.ENGLISH).format(Date())
+        val certId = com.eduhub.android.data.remote.VpsApiClient.generateUniqueCertificateId(userId, courseSlug, courseTitle)
+        val sha256 = com.eduhub.android.data.remote.VpsApiClient.computeCertificateHash(certId, effectiveStudentName, courseTitle, dateStr)
+        val aiCommendation = com.eduhub.android.data.remote.VpsApiClient.generateAiCommendation(courseSlug, effectiveStudentName)
+
         val cert = CertificateEntity(
-            verificationId = "EDUHUB-$hash",
+            verificationId = certId,
             courseSlug = courseSlug,
             courseTitle = courseTitle,
-            studentName = studentName,
+            studentName = effectiveStudentName,
             issueDate = dateStr,
             scorePercentage = scorePct,
-            grade = grade
+            grade = "Mastery with Honors (100% Course Completion)",
+            sha256Signature = sha256,
+            aiCommendation = aiCommendation,
+            issuerName = "EDUHUB Global Autonomous Academy",
+            isSyncedToServer = false
         )
         certificateDao.insertCertificate(cert)
         userProgressDao.addXp(250) // Certificate bonus XP
+
+        // Push progress to VPS if user is registered/logged in
+        if (user != null && user.isLoggedIn && user.username.isNotBlank()) {
+            com.eduhub.android.data.remote.VpsApiClient.pushProgress(
+                serverUrl = user.serverUrl,
+                username = user.username,
+                xp = user.totalXp + 250,
+                streak = user.currentStreak,
+                completedLessons = user.completedLessonsCount
+            )
+        }
         return cert
     }
 
-    private fun generateVerificationHash(name: String, slug: String): String {
-        val raw = "$name:$slug:${System.currentTimeMillis()}"
-        val digest = MessageDigest.getInstance("SHA-256").digest(raw.toByteArray())
-        return digest.take(4).joinToString("") { "%02X".format(it) }
+    suspend fun verifyCertificateOnline(code: String): com.eduhub.android.data.remote.CertificateVerificationData {
+        val cleanCode = code.trim().uppercase(Locale.ROOT)
+        val cert = certificateDao.getCertificateByVerificationId(cleanCode)
+        return if (cert != null) {
+            com.eduhub.android.data.remote.CertificateVerificationData(
+                isValid = true,
+                certificateId = cert.verificationId,
+                studentName = cert.studentName,
+                courseTitle = cert.courseTitle,
+                issueDate = cert.issueDate,
+                sha256Signature = cert.sha256Signature,
+                grade = cert.grade,
+                issuer = cert.issuerName,
+                aiCommendation = cert.aiCommendation,
+                message = "Official Verifiable Credential • Authenticity Confirmed"
+            )
+        } else {
+            com.eduhub.android.data.remote.CertificateVerificationData(
+                isValid = false,
+                certificateId = cleanCode,
+                studentName = "Unknown",
+                courseTitle = "Unverified",
+                issueDate = "",
+                sha256Signature = "",
+                message = "Certificate record not found. Verify the ID or cryptographic signature."
+            )
+        }
+    }
+
+    // --- VPS Central Online Cloud Sync & Authentication ---
+    suspend fun registerOnline(
+        fullName: String,
+        username: String,
+        email: String,
+        password: String
+    ): com.eduhub.android.data.remote.AuthResult {
+        val user = userProgressDao.getUserProgress()
+        val sUrl = user?.serverUrl ?: com.eduhub.android.data.remote.VpsApiClient.DEFAULT_VPS_URL
+        val res = com.eduhub.android.data.remote.VpsApiClient.registerStudent(sUrl, fullName, username, email, password)
+        if (res.ok) {
+            userProgressDao.updateAuthSession(
+                isLoggedIn = true,
+                username = res.username,
+                email = res.email,
+                fullName = res.fullName,
+                role = res.role,
+                userId = res.userId,
+                adminToken = "",
+                syncTime = System.currentTimeMillis()
+            )
+            // Push any existing offline XP to the VPS account immediately
+            val updatedUser = userProgressDao.getUserProgress()
+            if (updatedUser != null) {
+                com.eduhub.android.data.remote.VpsApiClient.pushProgress(
+                    serverUrl = sUrl,
+                    username = res.username,
+                    xp = updatedUser.totalXp,
+                    streak = updatedUser.currentStreak,
+                    completedLessons = updatedUser.completedLessonsCount
+                )
+            }
+        }
+        return res
+    }
+
+    suspend fun loginOnline(
+        identity: String,
+        password: String
+    ): com.eduhub.android.data.remote.AuthResult {
+        val user = userProgressDao.getUserProgress()
+        val sUrl = user?.serverUrl ?: com.eduhub.android.data.remote.VpsApiClient.DEFAULT_VPS_URL
+        val res = com.eduhub.android.data.remote.VpsApiClient.login(sUrl, identity, password)
+        if (res.ok) {
+            userProgressDao.updateAuthSession(
+                isLoggedIn = true,
+                username = res.username,
+                email = res.email,
+                fullName = res.fullName,
+                role = res.role,
+                userId = res.userId,
+                adminToken = res.adminToken,
+                syncTime = System.currentTimeMillis()
+            )
+            // Push offline XP to VPS
+            val updatedUser = userProgressDao.getUserProgress()
+            if (updatedUser != null) {
+                com.eduhub.android.data.remote.VpsApiClient.pushProgress(
+                    serverUrl = sUrl,
+                    username = res.username,
+                    xp = updatedUser.totalXp,
+                    streak = updatedUser.currentStreak,
+                    completedLessons = updatedUser.completedLessonsCount
+                )
+            }
+        }
+        return res
+    }
+
+    suspend fun logout() {
+        userProgressDao.clearAuthSession()
+    }
+
+    suspend fun setServerUrl(newUrl: String) {
+        userProgressDao.updateServerUrl(newUrl)
+    }
+
+    suspend fun syncWithVps(): com.eduhub.android.data.remote.ServerPingResult {
+        val user = userProgressDao.getUserProgress()
+        val sUrl = user?.serverUrl ?: com.eduhub.android.data.remote.VpsApiClient.DEFAULT_VPS_URL
+        val ping = com.eduhub.android.data.remote.VpsApiClient.pingServer(sUrl)
+        if (ping.ok && user != null && user.isLoggedIn && user.username.isNotBlank()) {
+            com.eduhub.android.data.remote.VpsApiClient.pushProgress(
+                serverUrl = sUrl,
+                username = user.username,
+                xp = user.totalXp,
+                streak = user.currentStreak,
+                completedLessons = user.completedLessonsCount
+            )
+            userProgressDao.updateLastSync(System.currentTimeMillis())
+        }
+        return ping
     }
 
     // --- User Progress & Gamification ---

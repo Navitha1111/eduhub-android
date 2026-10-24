@@ -27,10 +27,13 @@ import com.eduhub.android.ui.viewmodels.ProfileViewModel
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onNavigateToCertificates: () -> Unit,
-    onNavigateToBookmarks: () -> Unit
+    onNavigateToBookmarks: () -> Unit,
+    onNavigateToAuth: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val progress by viewModel.userProgress.collectAsState()
+    val syncMessage by viewModel.syncMessage.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
 
     var showEditNameDialog by remember { mutableStateOf(false) }
     var tempName by remember(progress) { mutableStateOf(progress?.studentName ?: "") }
@@ -41,6 +44,7 @@ fun ProfileScreen(
     val quizzesDone = progress?.completedQuizzesCount ?: 0
     val challengesDone = progress?.completedChallengesCount ?: 0
     val isDark = progress?.isDarkMode ?: true
+    val isLoggedIn = progress?.isLoggedIn ?: false
 
     val levelNum = (xp / 100) + 1
     val rankTitle = when {
@@ -48,6 +52,13 @@ fun ProfileScreen(
         xp >= 1000 -> "🔥 Senior Architecture Specialist"
         xp >= 500  -> "⚡ Competent Full-Stack Developer"
         else       -> "🌱 Active Coding Explorer"
+    }
+
+    LaunchedEffect(syncMessage) {
+        syncMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            viewModel.clearSyncMessage()
+        }
     }
 
     Scaffold(
@@ -62,6 +73,139 @@ fun ProfileScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 0. VPS Cloud Account & Registration Card
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                if (isLoggedIn) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = EduSlate900),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, EduCyan500.copy(alpha = 0.5f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(EduEmerald400)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Connected to VPS (162.35.9.208:8080)",
+                                    color = EduEmerald300,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = EduCyan500.copy(alpha = 0.2f)
+                                ) {
+                                    Text(
+                                        text = progress?.role ?: "STUDENT",
+                                        color = EduCyan300,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = progress?.studentName ?: "Student",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                text = "@${progress?.username ?: ""} • ${progress?.email ?: ""}",
+                                color = EduSlate400,
+                                fontSize = 13.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { viewModel.syncWithVps() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, EduCyan400),
+                                    enabled = !isSyncing
+                                ) {
+                                    if (isSyncing) {
+                                        CircularProgressIndicator(color = EduCyan400, modifier = Modifier.size(16.dp))
+                                    } else {
+                                        Icon(Icons.Default.Sync, contentDescription = null, tint = EduCyan300, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("Sync Now", color = EduCyan300, fontSize = 13.sp)
+                                    }
+                                }
+
+                                TextButton(
+                                    onClick = { viewModel.logout() },
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Sign Out", color = EduRose400, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .clickable { onNavigateToAuth() },
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = EduCyan950.copy(alpha = 0.5f)),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, EduCyan400.copy(alpha = 0.7f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(EduCyan500.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CloudSync, contentDescription = null, tint = EduCyan300)
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Connect to EDUHUB VPS Cloud",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Sign in or register free account to sync certificates & progress with VPS.",
+                                    color = EduSlate300,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = EduCyan400)
+                        }
+                    }
+                }
+            }
+
             // 1. Profile Header Card
             item {
                 Spacer(modifier = Modifier.height(4.dp))

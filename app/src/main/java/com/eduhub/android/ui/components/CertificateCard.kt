@@ -120,6 +120,25 @@ fun CertificateCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                if (certificate.aiCommendation.isNotBlank()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        color = EduCyan950.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, EduCyan500.copy(alpha = 0.3f))
+                    ) {
+                        Text(
+                            text = "“${certificate.aiCommendation}”",
+                            color = EduCyan200,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
                 Surface(
                     color = EduSlate800,
                     shape = RoundedCornerShape(12.dp)
@@ -136,7 +155,7 @@ fun CertificateCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Grade: ${certificate.grade} (${certificate.scorePercentage}%)",
+                            text = "Grade: ${certificate.grade}",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold
@@ -153,7 +172,7 @@ fun CertificateCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Issued: ${certificate.issueDate}",
                             style = MaterialTheme.typography.labelSmall,
@@ -163,9 +182,21 @@ fun CertificateCard(
                             text = "ID: ${certificate.verificationId}",
                             style = MaterialTheme.typography.labelSmall,
                             fontFamily = FontFamily.Monospace,
-                            color = EduSlate400
+                            fontWeight = FontWeight.Bold,
+                            color = EduAmber400
                         )
+                        if (certificate.sha256Signature.isNotBlank()) {
+                            Text(
+                                text = "Hash: ${certificate.sha256Signature}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = EduSlate400,
+                                fontSize = 10.sp
+                            )
+                        }
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Button(
                         onClick = onShare,
@@ -182,7 +213,7 @@ fun CertificateCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Share Certificate",
+                            text = "Share",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )

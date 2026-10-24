@@ -91,6 +91,25 @@ class FlashcardViewModel : ViewModel() {
 class CertificateViewModel(private val repository: EduHubRepository) : ViewModel() {
     val certificates: StateFlow<List<CertificateEntity>> = repository.allCertificates
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _verificationResult = MutableStateFlow<com.eduhub.android.data.remote.CertificateVerificationData?>(null)
+    val verificationResult: StateFlow<com.eduhub.android.data.remote.CertificateVerificationData?> = _verificationResult.asStateFlow()
+
+    private val _isVerifying = MutableStateFlow(false)
+    val isVerifying: StateFlow<Boolean> = _isVerifying.asStateFlow()
+
+    fun verifyCertificate(code: String) {
+        if (code.isBlank()) return
+        viewModelScope.launch {
+            _isVerifying.value = true
+            _verificationResult.value = repository.verifyCertificateOnline(code)
+            _isVerifying.value = false
+        }
+    }
+
+    fun clearVerification() {
+        _verificationResult.value = null
+    }
 }
 
 // 4. BookmarksNotesViewModel
@@ -139,6 +158,12 @@ class ProfileViewModel(private val repository: EduHubRepository) : ViewModel() {
     val userProgress: StateFlow<UserProgressEntity?> = repository.userProgress
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    private val _syncMessage = MutableStateFlow<String?>(null)
+    val syncMessage: StateFlow<String?> = _syncMessage.asStateFlow()
+
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
     fun updateName(newName: String) {
         if (newName.isNotBlank()) {
             viewModelScope.launch { repository.updateStudentName(newName) }
@@ -147,5 +172,29 @@ class ProfileViewModel(private val repository: EduHubRepository) : ViewModel() {
 
     fun toggleDarkMode(isDark: Boolean) {
         viewModelScope.launch { repository.toggleTheme(isDark) }
+    }
+
+    fun syncWithVps() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val ping = repository.syncWithVps()
+            _isSyncing.value = false
+            _syncMessage.value = if (ping.ok) {
+                "✓ Progress & certificates synchronized with VPS successfully!"
+            } else {
+                "⚠️ Sync alert: ${ping.rawMessage}"
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+            _syncMessage.value = "Logged out from VPS account."
+        }
+    }
+
+    fun clearSyncMessage() {
+        _syncMessage.value = null
     }
 }

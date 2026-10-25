@@ -123,7 +123,7 @@ fun ProfileScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Connected to VPS (162.35.9.208:8080)",
+                                    text = "EDUHUB Cloud Account Active",
                                     color = EduEmerald300,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
@@ -466,8 +466,8 @@ fun ProfileScreen(
                         )
                         HorizontalDivider(color = EduSlate800)
                         ListItem(
-                            headlineContent = { Text("About EDUHUB & VPS Health Check", color = Color.White, fontWeight = FontWeight.Bold) },
-                            supportingContent = { Text("v2.0.0 (Build 1) • Server 162.35.9.208:8080", color = EduSlate400) },
+                            headlineContent = { Text("About EDUHUB Academy", color = Color.White, fontWeight = FontWeight.Bold) },
+                            supportingContent = { Text("v2.0.0 (Build 1) • Official Production", color = EduSlate400) },
                             leadingContent = { Icon(Icons.Default.Info, contentDescription = null, tint = EduCyan300) },
                             trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null, tint = EduSlate400) },
                             modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { showAboutDialog = true },
@@ -668,7 +668,7 @@ fun ProfileScreen(
                         text = "EDUHUB is a 100% free, privacy-first educational mobile application designed for self-learners.\n\n" +
                                 "1. Zero Third-Party Advertising: We do not serve advertisements, trackers, or marketing analytics.\n\n" +
                                 "2. Offline-First Storage: All lessons, study notes, quiz scores, and coding snippets are stored locally on your device in an encrypted Room SQLite database.\n\n" +
-                                "3. VPS Cloud Sync: Optional cloud synchronization connects exclusively to your designated EDUHUB server (162.35.9.208:8080) for verifiable certificates and cross-device sync.\n\n" +
+                                "3. Cloud Sync: Optional cloud synchronization connects exclusively to the authoritative EDUHUB Cloud Network for verifiable certificates and cross-device sync.\n\n" +
                                 "4. Children's Privacy (COPPA & GDPR): Because EDUHUB collects zero personal marketing data, it is 100% safe for students of all ages including minors.",
                         color = EduSlate300,
                         fontSize = 13.sp,
@@ -830,7 +830,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("Zero-cost, open-curriculum computer science education platform designed to empower learners worldwide from complete beginner (0) to advanced systems architect (100).", color = EduSlate300, fontSize = 12.sp, lineHeight = 16.sp)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Active Backend: 162.35.9.208:8080", color = EduSlate400, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Text("Cloud Sync: Active & Verified", color = EduEmerald400, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     Text("Target SDK: Android 15 (API 35)", color = EduSlate400, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
                 }
             },

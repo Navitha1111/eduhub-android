@@ -19,7 +19,7 @@ object ShareUtil {
             Digital SHA-256 Signature: ${cert.sha256Signature}
             ${if (cert.aiCommendation.isNotBlank()) "Honors Commendation: \"${cert.aiCommendation}\"\n" else ""}
             Verified by: EDUHUB Global Autonomous Academy (100% Free Forever)
-            Verification Portal: http://162.35.9.208:8080/certificates/verify?id=${cert.verificationId}
+            Verification In-App Portal: Code ${cert.verificationId}
         """.trimIndent()
 
         val intent = Intent(Intent.ACTION_SEND).apply {

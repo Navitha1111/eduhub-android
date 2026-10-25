@@ -3,12 +3,10 @@ package com.eduhub.android.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,12 +18,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.eduhub.android.data.remote.VpsApiClient
 import com.eduhub.android.data.repository.EduHubRepository
 import com.eduhub.android.ui.components.CommonTopAppBar
 import com.eduhub.android.ui.theme.*
@@ -40,10 +36,8 @@ fun AuthScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val userProgress by repository.userProgress.collectAsState(initial = null)
 
     var selectedTab by remember { mutableStateOf(0) } // 0 = Register, 1 = Login
-    var serverUrl by remember { mutableStateOf(userProgress?.serverUrl ?: VpsApiClient.DEFAULT_VPS_URL) }
 
     // Register Form Fields
     var regFullName by remember { mutableStateOf("") }
@@ -59,37 +53,13 @@ fun AuthScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var serverStatusMessage by remember { mutableStateOf<String?>("Checking VPS status...") }
-    var isServerOnline by remember { mutableStateOf(false) }
-    var showServerSettings by remember { mutableStateOf(false) }
-
-    LaunchedEffect(userProgress?.serverUrl) {
-        val currentUrl = userProgress?.serverUrl ?: VpsApiClient.DEFAULT_VPS_URL
-        serverUrl = currentUrl
-        val ping = repository.syncWithVps()
-        isServerOnline = ping.ok
-        serverStatusMessage = if (ping.ok) {
-            "🟢 VPS Online (162.35.9.208:8080) • ${ping.coursesCount} Courses • ${ping.usersCount} Students"
-        } else {
-            "🔴 VPS Offline: ${ping.rawMessage}"
-        }
-    }
 
     Scaffold(
         topBar = {
             CommonTopAppBar(
                 title = if (selectedTab == 0) "Create Student Account" else "Sign In to Continue",
                 canNavigateBack = canNavigateBack,
-                onNavigateBack = onNavigateBack,
-                actions = {
-                    IconButton(onClick = { showServerSettings = !showServerSettings }) {
-                        Icon(
-                            Icons.Default.Dns,
-                            contentDescription = "Server Settings",
-                            tint = if (isServerOnline) EduEmerald400 else EduRose400
-                        )
-                    }
-                }
+                onNavigateBack = onNavigateBack
             )
         },
         containerColor = EduSlate950
@@ -102,146 +72,51 @@ fun AuthScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // VPS Connectivity Status Pill
-            Surface(
+            // Clean Branding & Auth Notice Banner
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { showServerSettings = !showServerSettings },
-                color = if (isServerOnline) EduEmerald500.copy(alpha = 0.15f) else EduRose500.copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isServerOnline) EduEmerald500.copy(alpha = 0.4f) else EduRose500.copy(alpha = 0.4f)
-                )
+                    .padding(bottom = 14.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = EduSlate900),
+                border = androidx.compose.foundation.BorderStroke(1.dp, EduCyan400.copy(alpha = 0.4f))
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
-                            .background(if (isServerOnline) EduEmerald400 else EduRose400)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = serverStatusMessage ?: "Connecting...",
-                        color = if (isServerOnline) EduEmerald300 else EduRose300,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        if (showServerSettings) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = EduSlate400,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            // Expandable VPS Server Settings
-            if (showServerSettings) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = EduSlate900),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, EduSlate800)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Central VPS Endpoint Configuration",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            .background(EduCyan500.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Lock",
+                            tint = EduCyan300,
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Connects this Android client to your authoritative server database.",
-                            color = EduSlate400,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = serverUrl,
-                            onValueChange = { serverUrl = it },
-                            label = { Text("Server URL", color = EduSlate400) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = EduCyan400,
-                                unfocusedBorderColor = EduSlate700
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        repository.setServerUrl(serverUrl)
-                                        val p = repository.syncWithVps()
-                                        isServerOnline = p.ok
-                                        serverStatusMessage = if (p.ok) {
-                                            "🟢 VPS Online (${p.coursesCount} Courses • ${p.usersCount} Students)"
-                                        } else {
-                                            "🔴 VPS Offline: ${p.rawMessage}"
-                                        }
-                                        Toast.makeText(context, if (p.ok) "Connected to VPS!" else "Connection failed", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, EduCyan400)
-                            ) {
-                                Text("Save & Test Connection", color = EduCyan300)
-                            }
-                        }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Mandatory Login Notice Banner
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = EduCyan950.copy(alpha = 0.6f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, EduCyan400.copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Lock",
-                        tint = EduCyan300,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Student Login Required to Continue Courses",
+                            text = "Student Login Required",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 15.sp
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Please sign in or create a student account to unlock the 39+ courses, track progress, and earn verified certificates.",
+                            text = "Sign in or create your free account to unlock 39+ programming tracks and sync your learning progress.",
                             color = EduSlate300,
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
                         )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
 
             // Navigation Tab Selector: Register vs Login
             TabRow(
@@ -287,31 +162,31 @@ fun AuthScreen(
             // Error Banner
             errorMessage?.let { err ->
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = EduRose500.copy(alpha = 0.2f)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, EduRose500)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, EduRose500.copy(alpha = 0.5f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = EduRose400)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = err, color = EduRose200, fontSize = 13.sp)
+                        Icon(Icons.Default.ErrorOutline, contentDescription = "Error", tint = EduRose400)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(text = err, color = EduRose300, fontSize = 13.sp)
                     }
                 }
-                Spacer(modifier = Modifier.height(14.dp))
             }
 
-            // FORM FIELDS
             if (selectedTab == 0) {
-                // REGISTER FORM
+                // REGISTRATION FORM
                 OutlinedTextField(
                     value = regFullName,
                     onValueChange = { regFullName = it },
-                    label = { Text("Full Legal Name", color = EduSlate400) },
-                    placeholder = { Text("e.g. Navitha Venuraka", color = EduSlate500) },
+                    label = { Text("Full Name (as on Certificate)", color = EduSlate400) },
+                    placeholder = { Text("Alex Mercer", color = EduSlate500) },
                     leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null, tint = EduSlate400) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -327,9 +202,9 @@ fun AuthScreen(
 
                 OutlinedTextField(
                     value = regUsername,
-                    onValueChange = { regUsername = it.filter { c -> c.isLetterOrDigit() || c == '_' } },
+                    onValueChange = { regUsername = it.lowercase().trim() },
                     label = { Text("Username", color = EduSlate400) },
-                    placeholder = { Text("e.g. dev_jordan", color = EduSlate500) },
+                    placeholder = { Text("alex_mercer", color = EduSlate500) },
                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = EduSlate400) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -347,9 +222,8 @@ fun AuthScreen(
                     value = regEmail,
                     onValueChange = { regEmail = it.trim() },
                     label = { Text("Email Address", color = EduSlate400) },
-                    placeholder = { Text("name@example.com", color = EduSlate500) },
+                    placeholder = { Text("alex@example.com", color = EduSlate500) },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = EduSlate400) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -365,7 +239,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = regPassword,
                     onValueChange = { regPassword = it },
-                    label = { Text("Password (Min 8 Characters)", color = EduSlate400) },
+                    label = { Text("Password (min 8 characters)", color = EduSlate400) },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = EduSlate400) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -433,7 +307,7 @@ fun AuthScreen(
                             )
                             isLoading = false
                             if (res.ok) {
-                                Toast.makeText(context, "Welcome, ${res.fullName}! Registered on VPS.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Welcome, ${res.fullName}! Account created successfully.", Toast.LENGTH_LONG).show()
                                 onAuthSuccess()
                             } else {
                                 errorMessage = res.errorMessage
@@ -452,7 +326,7 @@ fun AuthScreen(
                     } else {
                         Icon(Icons.Default.PersonAdd, contentDescription = null, tint = EduSlate950)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Create Student Account on VPS", color = EduSlate950, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Create Student Account", color = EduSlate950, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             } else {
@@ -515,7 +389,7 @@ fun AuthScreen(
                             val res = repository.loginOnline(loginIdentity.trim(), loginPassword)
                             isLoading = false
                             if (res.ok) {
-                                Toast.makeText(context, "Signed in as ${res.fullName} (${res.role})", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Signed in as ${res.fullName}", Toast.LENGTH_LONG).show()
                                 onAuthSuccess()
                             } else {
                                 errorMessage = res.errorMessage
@@ -534,7 +408,7 @@ fun AuthScreen(
                     } else {
                         Icon(Icons.Default.Login, contentDescription = null, tint = EduSlate950)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Sign In to VPS Cloud", color = EduSlate950, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Sign In to Account", color = EduSlate950, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
@@ -557,9 +431,9 @@ fun AuthScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "• Seamless sync: Your completed courses, XP points, and streak automatically sync to your VPS profile.\n" +
+                        text = "• Seamless sync: Your completed courses, XP points, and streak automatically sync to your cloud profile.\n" +
                                "• Verifiable Certificates: Credentials carry a cryptographically signed SHA-256 seal issued in your name.\n" +
-                               "• Cross-Platform: Use the same account across both EDUHUB Desktop (.exe) and this Android app.",
+                               "• Cross-Platform: Use the same account across both EDUHUB Desktop and this Android app.",
                         color = EduSlate400,
                         fontSize = 12.sp,
                         lineHeight = 18.sp

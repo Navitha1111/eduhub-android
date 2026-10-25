@@ -160,6 +160,7 @@ fun MainAppScaffold(
                     onNavigateToCertificates = { requireAuthAndNavigate(Screen.Certificates.route) },
                     onNavigateToCreator = { requireAuthAndNavigate(Screen.AdminCourseCreator.route) },
                     onNavigateToCourses = { requireAuthAndNavigate(Screen.Courses.route) },
+                    onNavigateToCheatSheet = { requireAuthAndNavigate(Screen.CheatSheet.route) },
                     onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
                 )
             }

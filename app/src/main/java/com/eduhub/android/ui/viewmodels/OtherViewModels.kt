@@ -174,6 +174,10 @@ class ProfileViewModel(private val repository: EduHubRepository) : ViewModel() {
         viewModelScope.launch { repository.toggleTheme(isDark) }
     }
 
+    fun updateSpeechRate(rate: Float) {
+        viewModelScope.launch { repository.updateSpeechRate(rate) }
+    }
+
     fun syncWithVps() {
         viewModelScope.launch {
             _isSyncing.value = true

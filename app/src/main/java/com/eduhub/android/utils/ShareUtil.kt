@@ -8,16 +8,18 @@ object ShareUtil {
 
     fun shareCertificate(context: Context, cert: CertificateEntity) {
         val shareText = """
-            🎓 OFFICIAL CERTIFICATE OF COMPLETION 🎓
+            🎓 OFFICIAL CERTIFICATE OF MASTERY — EDUHUB 🎓
             
-            This certifies that ${cert.studentName} has successfully completed 
-            the entire 0-to-Advanced curriculum for ${cert.courseTitle} on EDUHUB!
-            
+            Student Name: ${cert.studentName}
+            Course: ${cert.courseTitle}
             Grade: ${cert.grade} (${cert.scorePercentage}%)
-            Verification ID: ${cert.verificationId}
             Date Issued: ${cert.issueDate}
             
-            Verified by EDUHUB — Global Programming Self-Study Platform (100% Free Forever).
+            Credential ID: ${cert.verificationId}
+            Digital SHA-256 Signature: ${cert.sha256Signature}
+            ${if (cert.aiCommendation.isNotBlank()) "Honors Commendation: \"${cert.aiCommendation}\"\n" else ""}
+            Verified by: EDUHUB Global Autonomous Academy (100% Free Forever)
+            Verification Portal: http://162.35.9.208:8080/certificates/verify?id=${cert.verificationId}
         """.trimIndent()
 
         val intent = Intent(Intent.ACTION_SEND).apply {

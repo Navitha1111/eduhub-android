@@ -40,6 +40,7 @@ fun HomeScreen(
     onNavigateToCertificates: () -> Unit,
     onNavigateToCreator: () -> Unit,
     onNavigateToCourses: () -> Unit,
+    onNavigateToCheatSheet: () -> Unit = {},
     onNavigateToAuth: () -> Unit = {}
 ) {
     val userProgress by viewModel.userProgress.collectAsState()
@@ -166,6 +167,7 @@ fun HomeScreen(
                     ) {
                         QuickToolPill("Playground", Icons.Default.Code, EduCyan400, onNavigateToPlayground)
                         QuickToolPill("Flashcards", Icons.Default.Style, EduAmber500, onNavigateToFlashcards)
+                        QuickToolPill("Cheat Sheet", Icons.Default.Description, EduSky400, onNavigateToCheatSheet)
                         QuickToolPill("Certificates", Icons.Default.EmojiEvents, EduEmerald500, onNavigateToCertificates)
                         QuickToolPill("Saved Notes", Icons.Default.Bookmark, EduViolet500, onNavigateToBookmarks)
                         QuickToolPill("Auto Creator", Icons.Default.AutoAwesome, EduRose500, onNavigateToCreator)

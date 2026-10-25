@@ -78,6 +78,9 @@ interface UserProgressDao {
     @Query("UPDATE user_progress SET serverUrl = :serverUrl WHERE id = 1")
     suspend fun updateServerUrl(serverUrl: String)
 
+    @Query("UPDATE user_progress SET totalXp = :xp, completedLessonsCount = :completedLessons, currentStreak = :streak WHERE id = 1")
+    suspend fun updateStats(xp: Int, completedLessons: Int, streak: Int)
+
     @Query("UPDATE user_progress SET lastSyncTimestamp = :timestamp WHERE id = 1")
     suspend fun updateLastSync(timestamp: Long)
 

@@ -39,6 +39,9 @@ interface LessonDao {
     @Query("UPDATE lessons SET isCompleted = :isCompleted, completionTimestamp = :timestamp WHERE id = :lessonId")
     suspend fun updateLessonCompletion(lessonId: Long, isCompleted: Boolean, timestamp: Long)
 
+    @Query("UPDATE lessons SET isCompleted = 1, completionTimestamp = :timestamp WHERE courseSlug = :courseSlug")
+    suspend fun markAllLessonsCompletedForCourse(courseSlug: String, timestamp: Long)
+
     @Query("UPDATE lessons SET isBookmarked = :isBookmarked WHERE id = :lessonId")
     suspend fun updateBookmarkStatus(lessonId: Long, isBookmarked: Boolean)
 

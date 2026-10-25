@@ -39,6 +39,9 @@ interface CourseDao {
     @Query("UPDATE courses SET completedLessons = :completed, progressPercentage = :progress, isCompleted = :isCompleted WHERE id = :courseId")
     suspend fun updateProgress(courseId: Long, completed: Int, progress: Int, isCompleted: Boolean)
 
+    @Query("UPDATE courses SET completedLessons = totalLessons, progressPercentage = 100, isCompleted = 1 WHERE slug = :slug")
+    suspend fun markCourseFullyCompleted(slug: String)
+
     @Delete
     suspend fun deleteCourse(course: CourseEntity)
 

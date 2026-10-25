@@ -118,6 +118,13 @@ fun MainAppScaffold(
         }
     }
 
+    // Automatically synchronize completed coursework and certificates upon login / app start
+    LaunchedEffect(isLoggedIn, userProgress?.username) {
+        if (isLoggedIn && !userProgress?.username.isNullOrBlank()) {
+            repository.syncCloudUserProgressAndCertificates()
+        }
+    }
+
     val bottomBarRoutes = listOf(
         Screen.Home.route,
         Screen.Courses.route,
@@ -188,7 +195,8 @@ fun MainAppScaffold(
                     onNavigateToLesson = { id -> requireAuthAndNavigate(Screen.LessonDetail.createRoute(id)) },
                     onNavigateToQuiz = { s -> requireAuthAndNavigate(Screen.Quiz.createRoute(s)) },
                     onNavigateToChallenge = { s -> requireAuthAndNavigate(Screen.Challenge.createRoute(s)) },
-                    onNavigateToPlayground = { s -> requireAuthAndNavigate(Screen.Playground.createRoute(s)) }
+                    onNavigateToPlayground = { s -> requireAuthAndNavigate(Screen.Playground.createRoute(s)) },
+                    onNavigateToCertificates = { requireAuthAndNavigate(Screen.Certificates.route) }
                 )
             }
 

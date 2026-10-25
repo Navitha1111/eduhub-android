@@ -10,7 +10,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.*
@@ -40,9 +42,25 @@ fun CertificateScreen(
     val certificates by viewModel.certificates.collectAsState()
     val verificationResult by viewModel.verificationResult.collectAsState()
     val isVerifying by viewModel.isVerifying.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
+    val claimMessage by viewModel.claimMessage.collectAsState()
 
     var selectedTab by remember { mutableStateOf(0) } // 0 = My Certificates, 1 = Verify Credential
     var searchId by remember { mutableStateOf("") }
+
+    // Auto-sync certificates if list is currently empty
+    LaunchedEffect(Unit) {
+        if (certificates.isEmpty()) {
+            viewModel.syncCertificates()
+        }
+    }
+
+    LaunchedEffect(claimMessage) {
+        claimMessage?.let { msg ->
+            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.clearClaimMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -99,26 +117,106 @@ fun CertificateScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(24.dp),
+                            .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text(text = "🎓", fontSize = 64.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = "🎓", fontSize = 56.sp)
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "No Certificates Issued Yet",
-                            style = MaterialTheme.typography.headlineSmall,
+                            text = "Cloud Account Certificates",
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Complete all 4 Progressive Mastery Tiers in any course to automatically generate your official verifiable EDUHUB Certificate of Completion.",
+                            text = "Did you complete coursework on your laptop or web? Tap below to synchronize your account and restore your official diplomas to this device.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = EduSlate400,
                             textAlign = TextAlign.Center
                         )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = { viewModel.syncCertificates() },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = EduCyan500),
+                            enabled = !isSyncing
+                        ) {
+                            if (isSyncing) {
+                                CircularProgressIndicator(color = EduSlate950, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Syncing Account Credentials...", color = EduSlate950, fontWeight = FontWeight.Bold)
+                            } else {
+                                Icon(Icons.Default.CloudDownload, contentDescription = null, tint = EduSlate950, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Restore Account Certificates", color = EduSlate950, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Quick-Restore Available Track Cards
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = EduSlate900),
+                            border = BorderStroke(1.dp, EduSlate800)
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(
+                                    text = "⚡ Quick Coursework Import",
+                                    color = EduCyan300,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Select any completed track to immediately issue its verified certificate to your wallet:",
+                                    color = EduSlate400,
+                                    fontSize = 11.sp
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                val popularTracks = listOf(
+                                    "bash" to "Bash & Linux Shell Scripting (0 to 100)",
+                                    "css" to "CSS3 Modern Styling & Flexbox (0 to 100)",
+                                    "docker" to "Docker Containers & DevOps (0 to 100)",
+                                    "golang" to "Go Backend Systems & Concurrency (0 to 100)",
+                                    "python" to "Python Modern Programming & Automation (0 to 100)"
+                                )
+
+                                popularTracks.forEach { (slug, title) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = title,
+                                            color = EduSlate200,
+                                            fontSize = 11.sp,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        OutlinedButton(
+                                            onClick = { viewModel.claimCertificateForCourse(slug) },
+                                            modifier = Modifier.height(30.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = BorderStroke(1.dp, EduCyan400),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                        ) {
+                                            Text("Import", fontSize = 11.sp, color = EduCyan300, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 } else {
                     LazyColumn(
@@ -129,12 +227,28 @@ fun CertificateScreen(
                     ) {
                         item {
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "🏆 Earned Industry Mastery Credentials (${certificates.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "🏆 Earned Industry Mastery Credentials (${certificates.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                IconButton(
+                                    onClick = { viewModel.syncCertificates() },
+                                    enabled = !isSyncing
+                                ) {
+                                    if (isSyncing) {
+                                        CircularProgressIndicator(color = EduCyan400, modifier = Modifier.size(18.dp))
+                                    } else {
+                                        Icon(Icons.Default.Refresh, contentDescription = "Sync Cloud", tint = EduCyan400)
+                                    }
+                                }
+                            }
                         }
 
                         items(certificates) { cert ->
@@ -287,6 +401,33 @@ fun CertificateScreen(
                                                     modifier = Modifier.padding(12.dp)
                                                 )
                                             }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        Button(
+                                            onClick = {
+                                                val slug = when {
+                                                    res.courseTitle.contains("Bash", ignoreCase = true) -> "bash"
+                                                    res.courseTitle.contains("CSS", ignoreCase = true) -> "css"
+                                                    res.courseTitle.contains("Docker", ignoreCase = true) -> "docker"
+                                                    res.courseTitle.contains("Go", ignoreCase = true) -> "golang"
+                                                    res.courseTitle.contains("Python", ignoreCase = true) -> "python"
+                                                    res.courseTitle.contains("JavaScript", ignoreCase = true) -> "javascript"
+                                                    res.courseTitle.contains("Java", ignoreCase = true) -> "java"
+                                                    res.courseTitle.contains("Rust", ignoreCase = true) -> "rust"
+                                                    res.courseTitle.contains("Kotlin", ignoreCase = true) -> "kotlin"
+                                                    else -> "bash"
+                                                }
+                                                viewModel.claimCertificateForCourse(slug)
+                                                selectedTab = 0
+                                            },
+                                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                                            shape = RoundedCornerShape(10.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = EduEmerald500)
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EduSlate950, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Save to My Certificates", color = EduSlate950, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }

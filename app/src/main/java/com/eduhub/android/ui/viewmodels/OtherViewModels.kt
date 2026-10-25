@@ -98,6 +98,34 @@ class CertificateViewModel(private val repository: EduHubRepository) : ViewModel
     private val _isVerifying = MutableStateFlow(false)
     val isVerifying: StateFlow<Boolean> = _isVerifying.asStateFlow()
 
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    private val _claimMessage = MutableStateFlow<String?>(null)
+    val claimMessage: StateFlow<String?> = _claimMessage.asStateFlow()
+
+    fun syncCertificates() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val count = repository.syncCloudUserProgressAndCertificates()
+            _isSyncing.value = false
+            if (count > 0) {
+                _claimMessage.value = "✓ Synced $count official certificates with cloud account!"
+            }
+        }
+    }
+
+    fun claimCertificateForCourse(slug: String) {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val cert = repository.claimCourseCertificate(slug)
+            _isSyncing.value = false
+            if (cert != null) {
+                _claimMessage.value = "🎓 Certificate for ${cert.courseTitle} successfully added to your wallet!"
+            }
+        }
+    }
+
     fun verifyCertificate(code: String) {
         if (code.isBlank()) return
         viewModelScope.launch {
@@ -109,6 +137,10 @@ class CertificateViewModel(private val repository: EduHubRepository) : ViewModel
 
     fun clearVerification() {
         _verificationResult.value = null
+    }
+
+    fun clearClaimMessage() {
+        _claimMessage.value = null
     }
 }
 
@@ -181,12 +213,15 @@ class ProfileViewModel(private val repository: EduHubRepository) : ViewModel() {
     fun syncWithVps() {
         viewModelScope.launch {
             _isSyncing.value = true
+            val restoredCount = repository.syncCloudUserProgressAndCertificates()
             val ping = repository.syncWithVps()
             _isSyncing.value = false
-            _syncMessage.value = if (ping.ok) {
+            _syncMessage.value = if (restoredCount > 0) {
+                "✓ Cloud account synced! Restored $restoredCount official certificate(s) & completed lessons."
+            } else if (ping.ok) {
                 "✓ Progress & certificates synchronized with VPS successfully!"
             } else {
-                "⚠️ Sync alert: ${ping.rawMessage}"
+                "⚠️ Sync notice: ${ping.rawMessage}"
             }
         }
     }

@@ -31,7 +31,8 @@ fun CourseDetailScreen(
     onNavigateToLesson: (Long) -> Unit,
     onNavigateToQuiz: (String) -> Unit,
     onNavigateToChallenge: (String) -> Unit,
-    onNavigateToPlayground: (String) -> Unit
+    onNavigateToPlayground: (String) -> Unit,
+    onNavigateToCertificates: () -> Unit = {}
 ) {
     val course by viewModel.getCourse(courseSlug).collectAsState()
     val lessons by viewModel.getLessons(courseSlug).collectAsState()
@@ -146,6 +147,55 @@ fun CourseDetailScreen(
                                     color = if (c.isCompleted) EduEmerald500 else EduCyan400,
                                     trackColor = EduSlate800
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // 1.5 Completed Course Certificate Banner
+                if (c.isCompleted) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = EduEmerald500.copy(alpha = 0.15f)),
+                            border = BorderStroke(1.5.dp, EduEmerald500)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("🎓", fontSize = 28.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "Official Certificate Earned!",
+                                            color = EduEmerald400,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        )
+                                        Text(
+                                            text = "100% Course Completed • Verifiable SHA-256",
+                                            color = EduSlate300,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                                Button(
+                                    onClick = onNavigateToCertificates,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = EduEmerald500),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("View Diploma", color = EduSlate950, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
                             }
                         }
                     }

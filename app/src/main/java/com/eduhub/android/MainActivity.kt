@@ -1,16 +1,19 @@
 package com.eduhub.android
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -21,7 +24,7 @@ import androidx.navigation.navArgument
 import com.eduhub.android.ui.components.CommonBottomNavBar
 import com.eduhub.android.ui.navigation.Screen
 import com.eduhub.android.ui.screens.*
-import com.eduhub.android.ui.theme.EduHubTheme
+import com.eduhub.android.ui.theme.*
 import com.eduhub.android.ui.viewmodels.*
 
 class MainActivity : ComponentActivity() {
@@ -58,6 +61,62 @@ fun MainAppScaffold(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val context = LocalContext.current
+
+    val userProgress by repository.userProgress.collectAsState(initial = null)
+
+    if (userProgress == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(EduSlate950),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "EDUHUB",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = EduCyan400
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Zero to Advanced Full Free Coding Academy",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = EduSlate400
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                CircularProgressIndicator(color = EduCyan400)
+            }
+        }
+        return
+    }
+
+    val isLoggedIn = userProgress?.isLoggedIn == true
+    val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Auth.route
+
+    // Enforce authentication: students must be logged in to access/continue courses
+    val requireAuthAndNavigate: (String) -> Unit = { targetRoute ->
+        if (isLoggedIn) {
+            navController.navigate(targetRoute)
+        } else {
+            Toast.makeText(context, "Student login required to continue courses!", Toast.LENGTH_SHORT).show()
+            navController.navigate(Screen.Auth.route)
+        }
+    }
+
+    // Auto-redirect to Auth if session becomes logged out while on protected screen
+    LaunchedEffect(isLoggedIn, currentRoute) {
+        if (!isLoggedIn && currentRoute != null && currentRoute != Screen.Auth.route) {
+            val protectedPrefixes = listOf("course/", "lesson/", "quiz/", "challenge/", "certificates")
+            if (protectedPrefixes.any { currentRoute.startsWith(it) }) {
+                Toast.makeText(context, "Please sign in to continue courses!", Toast.LENGTH_SHORT).show()
+                navController.navigate(Screen.Auth.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            }
+        }
+    }
 
     val bottomBarRoutes = listOf(
         Screen.Home.route,
@@ -70,7 +129,7 @@ fun MainAppScaffold(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (currentRoute in bottomBarRoutes) {
+            if (isLoggedIn && currentRoute in bottomBarRoutes) {
                 CommonBottomNavBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
@@ -86,7 +145,7 @@ fun MainAppScaffold(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
             // 1. Home Dashboard
@@ -94,13 +153,14 @@ fun MainAppScaffold(
                 val homeVm = rememberViewModel { HomeViewModel(repository) }
                 HomeScreen(
                     viewModel = homeVm,
-                    onNavigateToCourse = { slug -> navController.navigate(Screen.CourseDetail.createRoute(slug)) },
-                    onNavigateToPlayground = { navController.navigate(Screen.Playground.createRoute()) },
-                    onNavigateToFlashcards = { navController.navigate(Screen.Flashcard.route) },
-                    onNavigateToBookmarks = { navController.navigate(Screen.BookmarksNotes.route) },
-                    onNavigateToCertificates = { navController.navigate(Screen.Certificates.route) },
-                    onNavigateToCreator = { navController.navigate(Screen.AdminCourseCreator.route) },
-                    onNavigateToCourses = { navController.navigate(Screen.Courses.route) }
+                    onNavigateToCourse = { slug -> requireAuthAndNavigate(Screen.CourseDetail.createRoute(slug)) },
+                    onNavigateToPlayground = { requireAuthAndNavigate(Screen.Playground.createRoute()) },
+                    onNavigateToFlashcards = { requireAuthAndNavigate(Screen.Flashcard.route) },
+                    onNavigateToBookmarks = { requireAuthAndNavigate(Screen.BookmarksNotes.route) },
+                    onNavigateToCertificates = { requireAuthAndNavigate(Screen.Certificates.route) },
+                    onNavigateToCreator = { requireAuthAndNavigate(Screen.AdminCourseCreator.route) },
+                    onNavigateToCourses = { requireAuthAndNavigate(Screen.Courses.route) },
+                    onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
                 )
             }
 
@@ -109,7 +169,7 @@ fun MainAppScaffold(
                 val courseVm = rememberViewModel { CourseViewModel(repository) }
                 CoursesScreen(
                     viewModel = courseVm,
-                    onNavigateToCourse = { slug -> navController.navigate(Screen.CourseDetail.createRoute(slug)) }
+                    onNavigateToCourse = { slug -> requireAuthAndNavigate(Screen.CourseDetail.createRoute(slug)) }
                 )
             }
 
@@ -124,10 +184,10 @@ fun MainAppScaffold(
                     courseSlug = slug,
                     viewModel = courseVm,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToLesson = { id -> navController.navigate(Screen.LessonDetail.createRoute(id)) },
-                    onNavigateToQuiz = { s -> navController.navigate(Screen.Quiz.createRoute(s)) },
-                    onNavigateToChallenge = { s -> navController.navigate(Screen.Challenge.createRoute(s)) },
-                    onNavigateToPlayground = { s -> navController.navigate(Screen.Playground.createRoute(s)) }
+                    onNavigateToLesson = { id -> requireAuthAndNavigate(Screen.LessonDetail.createRoute(id)) },
+                    onNavigateToQuiz = { s -> requireAuthAndNavigate(Screen.Quiz.createRoute(s)) },
+                    onNavigateToChallenge = { s -> requireAuthAndNavigate(Screen.Challenge.createRoute(s)) },
+                    onNavigateToPlayground = { s -> requireAuthAndNavigate(Screen.Playground.createRoute(s)) }
                 )
             }
 
@@ -142,7 +202,7 @@ fun MainAppScaffold(
                     lessonId = lessonId,
                     viewModel = lessonVm,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToPlayground = { lang -> navController.navigate(Screen.Playground.createRoute(lang)) }
+                    onNavigateToPlayground = { lang -> requireAuthAndNavigate(Screen.Playground.createRoute(lang)) }
                 )
             }
 
@@ -195,7 +255,7 @@ fun MainAppScaffold(
                 val cheatVm = rememberViewModel { CheatSheetViewModel() }
                 CheatSheetScreen(
                     viewModel = cheatVm,
-                    onNavigateToPlayground = { lang -> navController.navigate(Screen.Playground.createRoute(lang)) }
+                    onNavigateToPlayground = { lang -> requireAuthAndNavigate(Screen.Playground.createRoute(lang)) }
                 )
             }
 
@@ -213,7 +273,7 @@ fun MainAppScaffold(
                 val bnVm = rememberViewModel { BookmarksNotesViewModel(repository) }
                 BookmarksNotesScreen(
                     viewModel = bnVm,
-                    onNavigateToLesson = { id -> navController.navigate(Screen.LessonDetail.createRoute(id)) },
+                    onNavigateToLesson = { id -> requireAuthAndNavigate(Screen.LessonDetail.createRoute(id)) },
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -241,9 +301,14 @@ fun MainAppScaffold(
                 val profileVm = rememberViewModel { ProfileViewModel(repository) }
                 ProfileScreen(
                     viewModel = profileVm,
-                    onNavigateToCertificates = { navController.navigate(Screen.Certificates.route) },
-                    onNavigateToBookmarks = { navController.navigate(Screen.BookmarksNotes.route) },
-                    onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
+                    onNavigateToCertificates = { requireAuthAndNavigate(Screen.Certificates.route) },
+                    onNavigateToBookmarks = { requireAuthAndNavigate(Screen.BookmarksNotes.route) },
+                    onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
+                    onSignOut = {
+                        navController.navigate(Screen.Auth.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 )
             }
 
@@ -251,8 +316,15 @@ fun MainAppScaffold(
             composable(Screen.Auth.route) {
                 AuthScreen(
                     repository = repository,
-                    onNavigateBack = { navController.popBackStack() },
-                    onAuthSuccess = { navController.popBackStack() }
+                    canNavigateBack = isLoggedIn,
+                    onNavigateBack = {
+                        if (isLoggedIn) navController.popBackStack()
+                    },
+                    onAuthSuccess = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    }
                 )
             }
         }

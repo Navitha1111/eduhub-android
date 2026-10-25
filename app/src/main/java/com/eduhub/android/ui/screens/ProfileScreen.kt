@@ -28,7 +28,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onNavigateToCertificates: () -> Unit,
     onNavigateToBookmarks: () -> Unit,
-    onNavigateToAuth: () -> Unit = {}
+    onNavigateToAuth: () -> Unit = {},
+    onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val progress by viewModel.userProgress.collectAsState()
@@ -153,7 +154,10 @@ fun ProfileScreen(
                                 }
 
                                 TextButton(
-                                    onClick = { viewModel.logout() },
+                                    onClick = {
+                                        viewModel.logout()
+                                        onSignOut()
+                                    },
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
                                     Text("Sign Out", color = EduRose400, fontSize = 13.sp)

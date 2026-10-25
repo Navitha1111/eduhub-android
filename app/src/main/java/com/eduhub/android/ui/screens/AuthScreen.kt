@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthScreen(
     repository: EduHubRepository,
-    onNavigateBack: () -> Unit,
+    canNavigateBack: Boolean = false,
+    onNavigateBack: () -> Unit = {},
     onAuthSuccess: () -> Unit
 ) {
     val context = LocalContext.current
@@ -77,8 +78,8 @@ fun AuthScreen(
     Scaffold(
         topBar = {
             CommonTopAppBar(
-                title = if (selectedTab == 0) "Create Student Account" else "Sign In to EDUHUB",
-                canNavigateBack = true,
+                title = if (selectedTab == 0) "Create Student Account" else "Sign In to Continue",
+                canNavigateBack = canNavigateBack,
                 onNavigateBack = onNavigateBack,
                 actions = {
                     IconButton(onClick = { showServerSettings = !showServerSettings }) {
@@ -202,7 +203,45 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Mandatory Login Notice Banner
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = EduCyan950.copy(alpha = 0.6f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, EduCyan400.copy(alpha = 0.5f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Lock",
+                        tint = EduCyan300,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Student Login Required to Continue Courses",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Please sign in or create a student account to unlock the 39+ courses, track progress, and earn verified certificates.",
+                            color = EduSlate300,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Navigation Tab Selector: Register vs Login
             TabRow(

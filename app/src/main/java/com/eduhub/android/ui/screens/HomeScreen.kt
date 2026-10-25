@@ -39,7 +39,8 @@ fun HomeScreen(
     onNavigateToBookmarks: () -> Unit,
     onNavigateToCertificates: () -> Unit,
     onNavigateToCreator: () -> Unit,
-    onNavigateToCourses: () -> Unit
+    onNavigateToCourses: () -> Unit,
+    onNavigateToAuth: () -> Unit = {}
 ) {
     val userProgress by viewModel.userProgress.collectAsState()
     val inProgressCourses by viewModel.inProgressCourses.collectAsState()
@@ -70,16 +71,62 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(4.dp))
                 Column {
                     Text(
-                        text = "Welcome back, $studentName! 👋",
+                        text = if (userProgress?.isLoggedIn == true) "Welcome back, $studentName! 👋" else "Welcome to EDUHUB! 🚀",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "Zero to Advanced Full Free Coding Academy • 39+ Tracks",
+                        text = if (userProgress?.isLoggedIn == true)
+                            "VPS Cloud Sync Active • 39+ Tracks"
+                        else
+                            "Sign in with your VPS account to access full 0-to-advanced courses",
                         style = MaterialTheme.typography.bodyMedium,
                         color = EduSlate400
                     )
+                }
+            }
+
+            // 1.5 Mandatory Login Banner (if not authenticated)
+            if (userProgress?.isLoggedIn != true) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onNavigateToAuth() },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = EduCyan950.copy(alpha = 0.6f)),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, EduCyan400)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = EduCyan300,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Sign In to Access All Courses",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Courses and certificates require a registered student account. Tap here to sign in or create an account on the VPS server.",
+                                    color = EduSlate300,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = EduCyan400)
+                        }
+                    }
                 }
             }
 

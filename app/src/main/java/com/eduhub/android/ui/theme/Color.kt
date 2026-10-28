@@ -21,6 +21,7 @@ val EduSlate500 = Color(0xFF64748B)
 val EduSlate400 = Color(0xFF94A3B8)
 val EduSlate300 = Color(0xFFCBD5E1)
 val EduSlate200 = Color(0xFFE2E8F0)
+val EduSlate100 = Color(0xFFF1F5F9)
 val EduSlate50 = Color(0xFFF8FAFC)
 
 // Accents & Badges

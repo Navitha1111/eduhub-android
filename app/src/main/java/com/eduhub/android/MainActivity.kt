@@ -211,6 +211,14 @@ fun MainAppScaffold(
                     lessonId = lessonId,
                     viewModel = lessonVm,
                     onNavigateBack = { navController.popBackStack() },
+                    onNavigateToLesson = { nextId ->
+                        navController.navigate(Screen.LessonDetail.createRoute(nextId)) {
+                            popUpTo(Screen.LessonDetail.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToQuiz = { slug ->
+                        requireAuthAndNavigate(Screen.Quiz.createRoute(slug))
+                    },
                     onNavigateToPlayground = { lang -> requireAuthAndNavigate(Screen.Playground.createRoute(lang)) }
                 )
             }

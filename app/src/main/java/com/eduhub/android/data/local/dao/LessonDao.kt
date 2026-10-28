@@ -50,4 +50,10 @@ interface LessonDao {
 
     @Query("SELECT COUNT(*) FROM lessons WHERE courseId = :courseId AND isCompleted = 1")
     suspend fun getCompletedLessonsCountForCourse(courseId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM lessons")
+    suspend fun getTotalLessonsCount(): Int
+
+    @Query("DELETE FROM lessons")
+    suspend fun deleteAllLessons()
 }

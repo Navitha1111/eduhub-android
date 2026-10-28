@@ -47,4 +47,10 @@ interface CourseDao {
 
     @Query("SELECT COUNT(*) FROM courses")
     suspend fun getCourseCount(): Int
+
+    @Query("SELECT * FROM courses")
+    suspend fun getAllCourses(): List<CourseEntity>
+
+    @Query("UPDATE courses SET totalLessons = :totalLessons")
+    suspend fun updateAllCoursesTotalLessons(totalLessons: Int)
 }

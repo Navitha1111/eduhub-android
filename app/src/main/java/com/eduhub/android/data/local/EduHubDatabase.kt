@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
         CertificateEntity::class,
         SnippetEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class EduHubDatabase : RoomDatabase() {
@@ -55,6 +55,9 @@ abstract class EduHubDatabase : RoomDatabase() {
                 .addCallback(EduHubDatabaseCallback(applicationScope))
                 .build()
                 INSTANCE = instance
+                applicationScope.launch(Dispatchers.IO) {
+                    CurriculumSeeder.populateDatabase(instance)
+                }
                 instance
             }
         }
